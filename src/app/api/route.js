@@ -39,32 +39,81 @@ export async function GET(request) {
       let strikePriceInterval = 100
 
       let latestAtm = Math.round(currentPrice / strikePriceInterval) * strikePriceInterval
-      let atmIndex = optionData.filtered.data.findIndex(item => item.strikePrice == latestAtm)
-      let existingData = todayData[0] ? todayData[0].data : []
-      let filteredOptionData = {data:[...existingData],date:new Date().toDateString(), updatedAt:timeStamp}
+      let existingPutData =todayData[0]?.putData || []
+      let existingCallData =todayData[0]?.callData || []
+      let callSell = todayData[0]?.callSell || 0
+      let callBuy = todayData[0]?.callBuy || 0
+      let putSell = todayData[0]?.putSell || 0
+      let putBuy = todayData[0]?.putBuy || 0
+      let filteredOptionData = {
+        putData: [...existingPutData], 
+        callData:[...existingCallData]
+      }
       // console.log('----------optionData', optionData, atmIndex)
-      for (let i = atmIndex - 20; i < atmIndex + 20; i++) {
+      for (let i = 0; i < optionData.filtered.data.length; i++) {
+        const {expiryDate,underlying, underlyingValue, ...restPeData } = optionData.filtered.data[i].PE
+        const {expiryDate: expiryDateCe,underlying:underlyingCe, underlyingValue:underlyingValueCe, ...restCeData } = optionData.filtered.data[i].CE
         let peData = {
           ...optionData.filtered.data[i].PE,
-          time: timeStamp,
-          type: 'put',
-          atmStrikePrice: latestAtm
+          // time: timeStamp,
+          // type: 'put',
+          // atmStrikePrice: latestAtm
         }
+        putSell += optionData.filtered.data[i].PE.totalSellQuantity
+        putBuy += optionData.filtered.data[i].PE.totalBuyQuantity
+        
         let ceData = {
           ...optionData.filtered.data[i].CE,
-          time: timeStamp,
-          type: 'call',
-          atmStrikePrice: latestAtm
+          // time: timeStamp,
+          // type: 'call',
+          // atmStrikePrice: latestAtm
         }
-        filteredOptionData.data.push(peData)
-        filteredOptionData.data.push(ceData)
+        callSell += optionData.filtered.data[i].CE.totalSellQuantity
+        callBuy += optionData.filtered.data[i].CE.totalBuyQuantity
+
+        filteredOptionData.putData.push(restPeData)
+        filteredOptionData.callData.push(restCeData)
+      }
+      
+      filteredOptionData.putSell = putSell
+      filteredOptionData.putBuy = putBuy
+      filteredOptionData.callSell = callSell
+      filteredOptionData.callBuy = callBuy
+
+      const formattedData = {
+        filteredOptionData,
+        callOI: optionData.filtered.CE.totOI,
+        callVolume: optionData.filtered.CE.totVol,
+        pcr: optionData.filtered.PE.totOI/optionData.filtered.CE.totOI,
+        putOI: optionData.filtered.PE.totOI,
+        putVolume: optionData.filtered.PE.totVol,
+        putSell,
+        putBuy,
+        callSell,
+        callBuy,
+        atm,
+        time: timeStamp, 
       }
 
+      const finalData = {
+        date:new Date().toDateString(),
+        updatedAt:timeStamp,
+        data:[formattedData, ...todayData[0].data]
+      }
 
     // insert to mongo db collection
         let uploadedOptionData = todayData[0] ? 
-        await db.collection("option_chain_data").replaceOne({date:new Date().toDateString()},filteredOptionData)
-        : await db.collection("option_chain_data").insertOne(filteredOptionData);
+        await db.collection("option_chain_data")
+        .replaceOne(
+          {date:new Date().toDateString()},
+          {date:new Date().toDateString(),
+            updatedAt:timeStamp,
+            data:[formattedData, ...todayData[0].data]})
+        : await db.collection("option_chain_data")
+        .insertOne(
+          {date:new Date().toDateString(),
+          updatedAt:timeStamp,
+          data:[formattedData]});
         return Response.json(uploadedOptionData.acknowledged ? filteredOptionData :todayData[0])
     }
     return Response.json(todayData[0])

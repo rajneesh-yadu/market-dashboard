@@ -71,34 +71,34 @@ function Home() {
   // if(error) return 'An error has occurred: ' + error.message
   // if (isLoading) return 'Loading...'
 
-//  const getOptionData = async () => {
-//    let data = await fetch('./api');
-//    data = await data.json()
-//    console.log(data)
-//    return data?.data ? setData(data) : ''
-//  }
+ const getOptionData = async () => {
+   let data = await fetch('./api');
+   data = await data.json()
+   console.log(data)
+   return data?.data ? setData(data) : ''
+ }
 
  const getLatestPCR = (currentPCR) => setPCR(currentPCR)
 
-useEffect(() => {
-    function getAlerts() {
-      fetch('./api')
-        .then(result => result.json())
-        .then(result => setData(result))
-        .then((result) => console.log('fetch alerts', result))
-    }
-    getAlerts()
-    let interval
-    const d = new Date()
-    const hours = d.getHours()
-    const minutes = d.getMinutes()
-    // if(minutes == 21){
-      interval = setInterval(() => getAlerts(), 60000)
-    // }
-    return () => {
-      clearInterval(interval);
-    }
-}, [])
+// useEffect(() => {
+//     function getAlerts() {
+//       fetch('./api')
+//         .then(result => result.json())
+//         .then(result => setData(result))
+//         .then((result) => console.log('fetch alerts', result))
+//     }
+//     getAlerts()
+//     let interval
+//     const d = new Date()
+//     const hours = d.getHours()
+//     const minutes = d.getMinutes()
+//     // if(minutes == 21){
+//       interval = setInterval(() => getAlerts(), 60000)
+//     // }
+//     return () => {
+//       clearInterval(interval);
+//     }
+// }, [])
 
 // console.log('render alerts', data);
 
@@ -108,9 +108,9 @@ useEffect(() => {
         <button onClick={() => setSwitchToTrendingPage(!switchToTrendingPage) }>Trending</button>
             <p>BN - {data ? data?.data[data?.data?.length - 1]?.underlyingValue : ''}</p>
             <p>Strike Price - {data ? data?.data[data?.data?.length - 1]?.atmStrikePrice: ''}</p>
-            <p>PCR - {pcr}</p>
+            <p>PCR - {data?.pcr}</p>
             <p>Updated - {data?.updatedAt}</p>
-            {/* <button onClick={getOptionData}>Refresh Data</button> */}
+            <button onClick={getOptionData}>Refresh Data</button>
         </div>
         { !switchToTrendingPage ? 
         <>
