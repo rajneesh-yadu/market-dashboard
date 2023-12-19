@@ -3,13 +3,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  QueryClient,
-  QueryClientProvider,
-} from 'react-query'
 
 import PCR from './charts/cumluative-data/PCR'
 import OIputVsCall from './charts/cumluative-data/OIputVsCall'
@@ -22,30 +15,171 @@ import LtpCallVsPut from './charts/individual-data/LtpCallVsPut'
 import ChangeInOICallVsPut from './charts/individual-data/ChangeInOICallVsPut'
 import RootChart from './charts/RootChart'
 
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // ✅ globally default to 60 seconds
-      staleTime: 1000 * 10,
-    },
-  },
-})
+export default function Home() {
+  const [data, setData] = useState([])
+  const [switchToTrendingPage, setSwitchToTrendingPage] = useState(false)
 
-// Invalidate every query in the cache
-queryClient.invalidateQueries()
+  let timeSeries = []
+  let pcrSeries = []
+  let underlyingValueSeries = []
+  let callOiSeries =[]
+  let putOiSeries = []
+  let callBuySeries =[]
+  let callSellSeries =[]
+  let putBuySeries =[]
+  let putSellSeries =[]
+  let putVolumeSeries =[]
+  let callVolumeSeries =[]
 
-export default function App() {
-  return (<QueryClientProvider client={queryClient}>
-  <Home />
-</QueryClientProvider>)
+ const getOptionData = async () => {
+   let data = await fetch('./api');
+   data = await data.json()
+   console.log(data)
+   for(let item of data.data){
+    timeSeries = [...timeSeries, item.time]
+    pcrSeries = [...pcrSeries, item.pcr]
+    underlyingValueSeries = [...underlyingValueSeries, item.underlyingValue]
+    callOiSeries = [...callOiSeries, item.callOI]
+    putOiSeries = [...putOiSeries, item.putOI]
+    callBuySeries = [...callBuySeries, item.callBuy]
+    callSellSeries = [...callSellSeries, item.callSell]
+    putBuySeries = [...putBuySeries, item.putBuy]
+    putSellSeries = [...putSellSeries, item.putSell]
+    putVolumeSeries = [...putVolumeSeries, item.putVolume]
+    callVolumeSeries = [...callVolumeSeries, item.callVolume]
+  }
+   return data?.data ? setData(data) : ''
+ }
+
+
+// if(data?.data){
+//   for(let i = data.data.length - 1; i >= 0; i--){
+//    timeSeries = [...timeSeries, data.data[i].time]
+//    pcrSeries = [...pcrSeries, data.data[i].pcr]
+//    underlyingValueSeries = [...underlyingValueSeries, data.data[i].underlyingValue]
+//    callOiSeries = [...callOiSeries, data.data[i].callOI]
+//    putOiSeries = [...putOiSeries, data.data[i].putOI]
+//    callBuySeries = [...callBuySeries, data.data[i].callBuy]
+//    callSellSeries = [...callSellSeries, data.data[i].callSell]
+//    putBuySeries = [...putBuySeries, data.data[i].putBuy]
+//    putSellSeries = [...putSellSeries, data.data[i].putSell]
+//    putVolumeSeries = [...putVolumeSeries, data.data[i].putVolume]
+//    callVolumeSeries = [...callVolumeSeries, data.data[i].callVolume]
+//   }
+// }
+
+ if(data?.data){
+   for(let item of data.data){
+     timeSeries = [...timeSeries, item.time]
+     pcrSeries = [...pcrSeries, item.pcr]
+    underlyingValueSeries = [...underlyingValueSeries, item.underlyingValue]
+    callOiSeries = [...callOiSeries, item.callOI]
+    putOiSeries = [...putOiSeries, item.putOI]
+    callBuySeries = [...callBuySeries, item.callBuy]
+    callSellSeries = [...callSellSeries, item.callSell]
+    putBuySeries = [...putBuySeries, item.putBuy]
+    putSellSeries = [...putSellSeries, item.putSell]
+    putVolumeSeries = [...putVolumeSeries, item.putVolume]
+    callVolumeSeries = [...callVolumeSeries, item.callVolume]
+  }
 }
 
 
-function Home() {
-  const [data, setData] = useState('')
-  const [pcr, setPCR] = useState([])
-  const [switchToTrendingPage, setSwitchToTrendingPage] = useState(false)
+useEffect(() => {
+    function getAlerts() {
+      fetch('./api')
+        .then(result => result.json())
+        .then(result => {if(typeof result === 'object' ) setData(result)})
+        .then((result) => console.log('fetch alerts', data))
+    }
+    let interval
+    const d = new Date()
+    const hours = d.getHours()
+    const minutes = d.getMinutes()
+    const day = d.getDay()
+    console.log('day', day)
+    // if((day !== 6 || day !== 7) && (hours >= 9 && minutes >= 10) && (hours <= 15 && minutes <= 40)){
+      getAlerts()
+      // }
+      interval = setInterval(() => getAlerts(), 60 * 1000)
+    return () => {
+      clearInterval(interval);
+    }
+  }, [])
+
+  return (
+    <main>
+        <div className='h-16 bg-orange-400 flex gap-2 justify-end'>
+        <button onClick={() => setSwitchToTrendingPage(!switchToTrendingPage) }>Trending</button>
+            {/* <p>BN - {data ? data?.data[data?.data?.length - 1]?.underlyingValue : ''}</p> */}
+            {/* <p>ATM Strike - {data ? data?.data[data?.data?.length - 1]?.latestAtm: ''}</p> */}
+            {/* <p>PCR - {data ? data?.data[data?.data?.length - 1]?.pcr : ''}</p> */}
+            <p>Updated - {data?.updatedAt}</p>
+            <button onClick={getOptionData}>Refresh Data</button>
+        </div>
+        { !switchToTrendingPage ? 
+        <>
+        <div className='h-1/2 w-6/12 flex gap-2 '>
+          <PCR data={data} pcrSeries={pcrSeries} underlyingValueSeries={underlyingValueSeries} timeSeries={timeSeries}/>
+          <VolumeVsVolume data={data} callOiSeries={callOiSeries} putOiSeries={putOiSeries} putVolumeSeries={putVolumeSeries} callVolumeSeries={callVolumeSeries} timeSeries={timeSeries}/>
+        </div>
+        {/*<div className='h-1/2 w-6/12 flex gap-2 '>
+          <VolumeVsOIPut data={data} timeSeries={timeSeries} putVolumeSeries={putVolumeSeries} putOiSeries={putOiSeries}/>
+          <VolumeVsOICall data={data} timeSeries={timeSeries} callVolumeSeries={callVolumeSeries} callOiSeries={callOiSeries}/>
+        </div>*/}
+        <div className='h-1/2 w-6/12 flex gap-2 '>
+          <VolumeOiQuantityPut data={data} timeSeries={timeSeries} putVolumeSeries={putVolumeSeries} putOiSeries={putOiSeries} putBuySeries={putBuySeries} putSellSeries={putSellSeries}/>
+          <VolumeOiQuantityCall data={data} timeSeries={timeSeries} callVolumeSeries={callVolumeSeries} callOiSeries={callOiSeries} callBuySeries={callBuySeries} callSellSeries={callSellSeries}/>
+        </div>
+        </> :
+        <div className='h-1/2 w-6/12 flex gap-2'>
+          {/* <LtpCallVsPut data={data} pcr={pcr} timeSeries={timeSeries}/>
+          <ChangeInOICallVsPut data={data} pcr={pcr} timeSeries={timeSeries}/> */}
+        </div>}
+        </main>
+  )
+}
+
+
+  // const [timeSeries, setTimeSeries] = useState([])
+  // const [pcrSeries, setPcrSeries] = useState([])
+  // const [underlyingValueSeries, setUnderlyingValueSeries] = useState([])
+  // const [callOiSeries, setCallOiSeries] = useState([])
+  // const [putOiSeries, setPutOiSeries] = useState([])
+  // const [callBuySeries, setCallBuySeries] = useState([])
+  // const [callSellSeries, setCallSellSeries] = useState([])
+  // const [putBuySeries, setPutBuySeries] = useState([])
+  // const [putSellSeries, setPutSellSeries] = useState([])
+  // const [putVolumeSeries, setPutVolumeSeries] = useState([])
+  // const [callVolumeSeries, setCallVolumeSeries] = useState([])
+
+
+  // import {
+  //   useQuery,
+  //   useMutation,
+  //   useQueryClient,
+  //   QueryClient,
+  //   QueryClientProvider,
+  // } from 'react-query'
+
+  // Create a client
+// const queryClient = new QueryClient({
+//   defaultOptions: {
+//     queries: {
+//       // ✅ globally default to 60 seconds
+//       staleTime: 1000 * 10,
+//     },
+//   },
+// })
+
+// // Invalidate every query in the cache
+// queryClient.invalidateQueries()
+
+// export default function App() {
+//   return (<QueryClientProvider client={queryClient}>
+//   <Home />
+// </QueryClientProvider>)
+// }
 
   // let data, err
   // try {
@@ -70,67 +204,3 @@ function Home() {
 
   // if(error) return 'An error has occurred: ' + error.message
   // if (isLoading) return 'Loading...'
-
- const getOptionData = async () => {
-   let data = await fetch('./api');
-   data = await data.json()
-   console.log(data)
-   return data?.data ? setData(data) : ''
- }
-
- const getLatestPCR = (currentPCR) => setPCR(currentPCR)
-
-// useEffect(() => {
-//     function getAlerts() {
-//       fetch('./api')
-//         .then(result => result.json())
-//         .then(result => setData(result))
-//         .then((result) => console.log('fetch alerts', result))
-//     }
-//     getAlerts()
-//     let interval
-//     const d = new Date()
-//     const hours = d.getHours()
-//     const minutes = d.getMinutes()
-//     // if(minutes == 21){
-//       interval = setInterval(() => getAlerts(), 60000)
-//     // }
-//     return () => {
-//       clearInterval(interval);
-//     }
-// }, [])
-
-// console.log('render alerts', data);
-
-  return (
-    <main>
-        <div className='h-16 bg-orange-400 flex gap-2 justify-end'>
-        <button onClick={() => setSwitchToTrendingPage(!switchToTrendingPage) }>Trending</button>
-            <p>BN - {data ? data?.data[data?.data?.length - 1]?.underlyingValue : ''}</p>
-            <p>Strike Price - {data ? data?.data[data?.data?.length - 1]?.atmStrikePrice: ''}</p>
-            <p>PCR - {data?.pcr}</p>
-            <p>Updated - {data?.updatedAt}</p>
-            <button onClick={getOptionData}>Refresh Data</button>
-        </div>
-        { !switchToTrendingPage ? 
-        <>
-        <div className='h-1/2 w-6/12 flex gap-2 '>
-          <PCR data={data} getLatestPCR={getLatestPCR}/>
-          <VolumeVsVolume data={data}/>
-        </div>
-        <div className='h-1/2 w-6/12 flex gap-2 '>
-          <VolumeVsOIPut data={data}/>
-          <VolumeVsOICall data={data}/>
-        </div>
-        <div className='h-1/2 w-6/12 flex gap-2 '>
-          <VolumeOiQuantityPut data={data}/>
-          <VolumeOiQuantityCall data={data}/>
-        </div>
-        </> :
-        <div className='h-1/2 w-6/12 flex gap-2'>
-          <LtpCallVsPut data={data} pcr={pcr}/>
-          <ChangeInOICallVsPut data={data} pcr={pcr}/>
-        </div>}
-        </main>
-  )
-}

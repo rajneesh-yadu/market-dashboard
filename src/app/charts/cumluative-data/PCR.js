@@ -22,34 +22,7 @@ import {
     Legend
   );
   
-function PCR(props) {
-    const {data:{data = [], updatedAt=null, date=null, noNewData=false }, getLatestPCR} = props
-
-    const putData = data.filter(item => item.type === 'put')
-    const callData = data.filter(item => item.type === 'call')
-    
-    const totalPutOI = putData.filter(item => item.time === updatedAt).reduce((total, current) => (total + current.openInterest), 1)
-    const totalCallOI = callData.filter(item => item.time === updatedAt).reduce((total, current) => (total + current.openInterest), 1)
-    const currentPCR = Math.round(100 * totalPutOI / totalCallOI)
-    useEffect(() => {
-      getLatestPCR(currentPCR)
-    },[currentPCR])
-    
-    let timeSeries = []
-    data.filter(item => item.type === 'put').map((item) => {
-        if(!timeSeries.includes(item.time)) timeSeries.push(item.time)
-    })
-
-    let pcrSeries = []
-    let indexPriceSeries = []
-    for(let time of timeSeries){
-        let putOI = putData.filter(item => item.time === time).reduce((total, current) => (total + current.openInterest), 0)
-        let callOI = callData.filter(item => item.time === time).reduce((total, current) => (total + current.openInterest), 0)
-        let indexPrice = callData.filter(item => item.time === time).reduce((total, current) => (current.underlyingValue), 0)
-        // chartData.push({time, putOI, callOI, PCR: putOI/callOI, indexPrice })
-        pcrSeries.push(putOI/callOI)
-        indexPriceSeries.push(indexPrice)
-    }
+function PCR({pcrSeries, timeSeries, underlyingValueSeries}) {
 
     const options = {
         responsive: true,
@@ -124,7 +97,7 @@ function PCR(props) {
             pointRadius: 1,
             pointHitRadius: 10,
             yAxisID: 'index',
-            data: [...indexPriceSeries]
+            data: [...underlyingValueSeries]
           }
         ]
       };

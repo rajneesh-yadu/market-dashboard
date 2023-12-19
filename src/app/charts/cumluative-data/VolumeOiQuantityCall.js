@@ -24,36 +24,7 @@ import {
     Filler
   );
   
-function VolumeVsOIPut(props) {
-    const {data:{data = [], updatedAt=null, date=null, noNewData=false }} = props
-
-    // const putData = data.filter(item => item.type === 'put')
-    const callData = data.filter(item => item.type === 'call')
-    
-    // const totalPutOI = putData.filter(item => item.time === updatedAt).reduce((total, current) => (total + current.openInterest), 1)
-    // const totalCallOI = callData.filter(item => item.time === updatedAt).reduce((total, current) => (total + current.openInterest), 1)
-    // const currentPCR = Math.round(100 * totalPutOI / totalCallOI)
-    
-    let timeSeries = []
-    data.filter(item => item.type === 'put').map((item) => {
-        if(!timeSeries.includes(item.time)) timeSeries.push(item.time)
-    })
-
-    let callOiSeries = []
-    let callVolumeSeries = []
-    let callSellSeries = []
-    let callBuySeries = []
-    for(let time of timeSeries){
-        let callOI = callData.filter(item => item.time === time).reduce((total, current) => (total + current.openInterest), 0)
-        let callVolume = callData.filter(item => item.time === time).reduce((total, current) => (total + current.totalTradedVolume), 0)
-        let callBuy = callData.filter(item => item.time === time).reduce((total, current) => (total + current.totalBuyQuantity), 0)
-        let callSell = callData.filter(item => item.time === time).reduce((total, current) => (total + current.totalSellQuantity), 0)
-
-        callOiSeries.push(callOI)
-        callVolumeSeries.push(callVolume)
-        callSellSeries.push(callSell)
-        callBuySeries.push(callBuy)
-    }
+function VolumeVsOIPut({timeSeries, callBuySeries, callSellSeries, callOiSeries, callVolumeSeries}) {
 
     const options = {
         responsive: true,

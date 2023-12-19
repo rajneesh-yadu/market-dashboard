@@ -26,37 +26,8 @@ import {
     BarElement
   );
   
-function VolumeVsOIPut(props) {
-    const {data:{data = [], updatedAt=null, date=null, noNewData=false }} = props
-
-    const putData = data.filter(item => item.type === 'put')
-    // const callData = data.filter(item => item.type === 'call')
-    
-    // const totalPutOI = putData.filter(item => item.time === updatedAt).reduce((total, current) => (total + current.openInterest), 1)
-    // const totalCallOI = callData.filter(item => item.time === updatedAt).reduce((total, current) => (total + current.openInterest), 1)
-    // const currentPCR = Math.round(100 * totalPutOI / totalCallOI)
-    
-    let timeSeries = []
-    data.filter(item => item.type === 'put').map((item) => {
-        if(!timeSeries.includes(item.time)) timeSeries.push(item.time)
-    })
-
-    let putOiSeries = []
-    let putVolumeSeries = []
-    let putSellSeries = []
-    let putBuySeries = []
-    for(let time of timeSeries){
-        let putOI = putData.filter(item => item.time === time).reduce((total, current) => (total + current.openInterest), 0)
-        let putVolume = putData.filter(item => item.time === time).reduce((total, current) => (total + current.totalTradedVolume), 0)
-        let putBuy = putData.filter(item => item.time === time).reduce((total, current) => (total + current.totalBuyQuantity), 0)
-        let putSell = putData.filter(item => item.time === time).reduce((total, current) => (total + current.totalSellQuantity), 0)
-
-        putOiSeries.push(putOI)
-        putVolumeSeries.push(putVolume)
-        putSellSeries.push(putSell)
-        putBuySeries.push(putBuy)
-    }
-
+function VolumeVsOIPut({timeSeries, putBuySeries, putSellSeries, putOiSeries, putVolumeSeries}) {
+   
     const options = {
         responsive: true,
         plugins: {

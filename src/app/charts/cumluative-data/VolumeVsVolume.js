@@ -24,38 +24,7 @@ import {
     Filler
   );
   
-function VolumeVsOIPut(props) {
-    const {data:{data = [], updatedAt=null, date=null, noNewData=false }} = props
-
-    const putData = data.filter(item => item.type === 'put')
-    const callData = data.filter(item => item.type === 'call')
-    
-    // const totalPutOI = putData.filter(item => item.time === updatedAt).reduce((total, current) => (total + current.openInterest), 1)
-    // const totalCallOI = callData.filter(item => item.time === updatedAt).reduce((total, current) => (total + current.openInterest), 1)
-    // const currentPCR = Math.round(100 * totalPutOI / totalCallOI)
-    
-    let timeSeries = []
-    data.filter(item => item.type === 'put').map((item) => {
-        if(!timeSeries.includes(item.time)) timeSeries.push(item.time)
-    })
-
-    let putOiSeries = []
-    let putVolumeSeries = []
-    let callOiSeries = []
-    let callVolumeSeries = []
-    for(let time of timeSeries){
-        let putOI = putData.filter(item => item.time === time).reduce((total, current) => (total + current.openInterest), 0)
-        let callOI = callData.filter(item => item.time === time).reduce((total, current) => (total + current.openInterest), 0)
-        let putVolume = putData.filter(item => item.time === time).reduce((total, current) => (total + current.totalTradedVolume), 0)
-        let callVolume = callData.filter(item => item.time === time).reduce((total, current) => (total + current.totalTradedVolume), 0)
-        // let indexPrice = callData.filter(item => item.time === time).reduce((total, current) => (current.underlyingValue), 0)
-        // chartData.push({time, putOI, callOI, PCR: putOI/callOI, indexPrice })
-        callOiSeries.push(callOI)
-        putOiSeries.push(putOI)
-        callVolumeSeries.push(callVolume)
-        putVolumeSeries.push(putVolume)
-        // indexPriceSeries.push(indexPrice)
-    }
+function VolumeVsVolume({callOiSeries, callVolumeSeries,putOiSeries, putVolumeSeries, timeSeries}) {
 
     const options = {
         responsive: true,
@@ -184,4 +153,4 @@ function VolumeVsOIPut(props) {
     </>)
 }
 
-export default VolumeVsOIPut
+export default VolumeVsVolume
