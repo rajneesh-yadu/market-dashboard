@@ -7,12 +7,13 @@ export async function GET(request) {
   let isNseDataHasError = false
   let isDbConnectionError = false
 
+  console.log('################### STARTS ###################')
   try {
     //* fetch option data from nse website*/
     nseData = await fetch(
       'https://www.nseindia.com/api/option-chain-indices?symbol=BANKNIFTY',
       { next: { revalidate: 45 } }
-      )
+    )
     optionData = await nseData.json()
     timeStamp = optionData.records.timestamp.substr(-8, 8)
     console.log('-----------timeStamp', timeStamp)
@@ -29,21 +30,27 @@ export async function GET(request) {
     //* use it to insert data from docs
     // const insertData = await db.collection("option_chain_data").insertOne({data:testData, date:"Fri Dec 01 2023",updatedAt:"15:30:00" });
     // console.log('data inserted', insertData)
-    
+
     //* fetch today's data from mongo collection */
     todayData = await db
-    .collection('option_chain_data')
-    .find({ date: new Date().toDateString() })
-    .toArray()
+      .collection('option_chain_data')
+      .find({ date: new Date().toDateString() })
+      .toArray()
     // todayData = await db.collection("option_chain_data").find({date:'Fri Dec 01 2023'}).toArray();
-    console.log('-----------db connected')
+    console.log('db connected')
   } catch (error) {
-    console.log('-----------db connection issue', error.message)
+    console.log('db connection issue', error.message)
     isDbConnectionError = true
   }
 
   //* if no existing data then create new reocrd or update the existing data*/
-  if (!isNseDataHasError && !isDbConnectionError && (todayData[0] === undefined || todayData[0]?.updatedAt === "15:30:00" || (todayData[0]?.updatedAt < timeStamp && todayData[0]?.updatedAt <= "15:30:00" ))) {
+  if (
+    !isNseDataHasError &&
+    !isDbConnectionError &&
+    ((todayData[0] === undefined && timeStamp !== '15:30:00') ||
+      (todayData[0]?.updatedAt < timeStamp &&
+        todayData[0]?.updatedAt <= '15:30:00'))
+  ) {
     let currentPrice = optionData.records.underlyingValue
     let strikePriceInterval = 100
 
@@ -62,24 +69,24 @@ export async function GET(request) {
     for (let i = 0; i < optionData.filtered.data.length; i++) {
       try {
         const {
-          expiryDate: ed,
-          underlying: u,
-          underlyingValue: uv,
+          expiryDate: ed = '',
+          underlying: u = '',
+          underlyingValue: uv = '',
           ...restPeData
         } = optionData.filtered.data[i].PE
         const {
-          expiryDate: expiryDateCe,
-          underlying: underlyingCe,
-          underlyingValue: underlyingValueCe,
+          expiryDate: expiryDateCe = '',
+          underlying: underlyingCe = '',
+          underlyingValue: underlyingValueCe = '',
           ...restCeData
         } = optionData.filtered.data[i].CE
-  
+
         putSell += optionData.filtered.data[i].PE.totalSellQuantity
         putBuy += optionData.filtered.data[i].PE.totalBuyQuantity
-  
+
         callSell += optionData.filtered.data[i].CE.totalSellQuantity
         callBuy += optionData.filtered.data[i].CE.totalBuyQuantity
-  
+
         filteredOptionData.putData.push(restPeData)
         filteredOptionData.callData.push(restCeData)
         expiryDate = ed
@@ -88,7 +95,6 @@ export async function GET(request) {
       } catch (error) {
         console.log('-------error in loop', `iteration-${i}`, error.message)
       }
-
     }
 
     const formattedData = {
@@ -126,7 +132,8 @@ export async function GET(request) {
             }
           )
         : await db.collection('option_chain_data').insertOne(finalData)
-      console.log('------------db updated------------------')
+      console.log('------------db updated')
+      console.log('################### ENDS ###################')
       return Response.json(
         uploadedOptionData.acknowledged ? finalData : todayData[0]
       )
@@ -140,7 +147,7 @@ export async function GET(request) {
         error.message
       )
       if (error.message.includes('Size must be between 0 and 16793600(16MB)')) {
-        console.log('got message')
+        console.log('first document filled-----------')
         let existingData1 = todayData[1] ? todayData[1].data : []
         const finalData1 = {
           date: new Date().toDateString(),
@@ -167,6 +174,7 @@ export async function GET(request) {
               updatedAt: timeStamp,
               data: [...existingData, ...existingData1, formattedData],
             }
+            console.log('################### ENDS ###################')
             return Response.json(
               uploadedOptionData.acknowledged
                 ? finalAggregatedData
@@ -180,11 +188,8 @@ export async function GET(request) {
               updatedAt: timeStamp,
               data: [...existingData, ...existingData1],
             }
-            return Response.json(
-              uploadedOptionData.acknowledged
-                ? finalAggregatedData
-                : todayData[0]
-            )
+            console.log('################### ENDS ###################')
+            return Response.json(finalAggregatedData)
           }
         } else {
           let uploadedOptionData = await db
@@ -197,6 +202,7 @@ export async function GET(request) {
             updatedAt: timeStamp,
             data: [...existingData, ...existingData1, formattedData],
           }
+          console.log('################### ENDS ###################')
           return Response.json(
             uploadedOptionData.acknowledged ? finalAggregatedData : todayData[0]
           )
@@ -204,6 +210,7 @@ export async function GET(request) {
       }
     }
   }
-  console.log('--------------no new data------------------------')
+  console.log('no new data------------------------')
+  console.log('################### ENDS ###################')
   return Response.json(todayData[0])
 }
